@@ -36,8 +36,8 @@ type AccountFlags struct {
 	CreditsMustNotExceedDebits bool
 }
 
-func (f AccountFlags) ToUint32() uint32 {
-	var ret uint32 = 0
+func (f AccountFlags) ToUint16() uint16 {
+	var ret uint16 = 0
 
 	if f.Linked {
 		ret |= (1 << 0)
@@ -105,8 +105,8 @@ type TransferFlags struct {
 	VodiPendingTransfer bool
 }
 
-func (f TransferFlags) ToUint32() uint32 {
-	var ret uint32 = 0
+func (f TransferFlags) ToUint16() uint16 {
+	var ret uint16 = 0
 
 	if f.Linked {
 		ret |= (1 << 0)

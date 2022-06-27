@@ -96,14 +96,14 @@ func TestClient(s *testing.T) {
 
 func doTestClient(s *testing.T, client Client) {
 	accountA := types.Account{
-		ID:   *toU128("a"),
-		Unit: 1,
-		Code: 1,
+		ID:     *toU128("a"),
+		Ledger: 1,
+		Code:   1,
 	}
 	accountB := types.Account{
-		ID:   *toU128("b"),
-		Unit: 1,
-		Code: 2,
+		ID:     *toU128("b"),
+		Ledger: 1,
+		Code:   2,
 	}
 
 	s.Run("can create accounts", func(t *testing.T) {
@@ -129,23 +129,23 @@ func doTestClient(s *testing.T, client Client) {
 
 		assert.Len(t, results, 2)
 		accA := results[0]
-		assert.Equal(t, uint16(1), accA.Unit)
+		assert.Equal(t, uint16(1), accA.Ledger)
 		assert.Equal(t, uint16(1), accA.Code)
-		assert.Equal(t, uint32(0), accA.Flags)
-		assert.Equal(t, uint64(0), accA.DebitsReserved)
-		assert.Equal(t, uint64(0), accA.DebitsAccepted)
-		assert.Equal(t, uint64(0), accA.CreditsReserved)
-		assert.Equal(t, uint64(0), accA.CreditsAccepted)
+		assert.Equal(t, uint16(0), accA.Flags)
+		assert.Equal(t, uint64(0), accA.DebitsPending)
+		assert.Equal(t, uint64(0), accA.DebitsPosted)
+		assert.Equal(t, uint64(0), accA.CreditsPending)
+		assert.Equal(t, uint64(0), accA.CreditsPosted)
 		assert.NotEqual(t, uint64(0), accA.TimeStamp)
 
 		accB := results[1]
-		assert.Equal(t, uint16(1), accB.Unit)
+		assert.Equal(t, uint16(1), accB.Ledger)
 		assert.Equal(t, uint16(2), accB.Code)
-		assert.Equal(t, uint32(0), accB.Flags)
-		assert.Equal(t, uint64(0), accB.DebitsReserved)
-		assert.Equal(t, uint64(0), accB.DebitsAccepted)
-		assert.Equal(t, uint64(0), accB.CreditsReserved)
-		assert.Equal(t, uint64(0), accB.CreditsAccepted)
+		assert.Equal(t, uint16(0), accB.Flags)
+		assert.Equal(t, uint64(0), accB.DebitsPending)
+		assert.Equal(t, uint64(0), accB.DebitsPosted)
+		assert.Equal(t, uint64(0), accB.CreditsPending)
+		assert.Equal(t, uint64(0), accB.CreditsPosted)
 		assert.NotEqual(t, uint64(0), accB.TimeStamp)
 	})
 
@@ -171,16 +171,16 @@ func doTestClient(s *testing.T, client Client) {
 		assert.Len(t, accounts, 2)
 
 		accountA = accounts[0]
-		assert.Equal(t, uint64(100), accountA.CreditsAccepted)
-		assert.Equal(t, uint64(0), accountA.CreditsReserved)
-		assert.Equal(t, uint64(0), accountA.DebitsAccepted)
-		assert.Equal(t, uint64(0), accountA.DebitsReserved)
+		assert.Equal(t, uint64(100), accountA.CreditsPosted)
+		assert.Equal(t, uint64(0), accountA.CreditsPending)
+		assert.Equal(t, uint64(0), accountA.DebitsPosted)
+		assert.Equal(t, uint64(0), accountA.DebitsPending)
 
 		accountB = accounts[1]
-		assert.Equal(t, uint64(0), accountB.CreditsAccepted)
-		assert.Equal(t, uint64(0), accountB.CreditsReserved)
-		assert.Equal(t, uint64(100), accountB.DebitsAccepted)
-		assert.Equal(t, uint64(0), accountB.DebitsReserved)
+		assert.Equal(t, uint64(0), accountB.CreditsPosted)
+		assert.Equal(t, uint64(0), accountB.CreditsPending)
+		assert.Equal(t, uint64(100), accountB.DebitsPosted)
+		assert.Equal(t, uint64(0), accountB.DebitsPending)
 	})
 
 	s.Run("can create linked transfers", func(t *testing.T) {
@@ -189,7 +189,7 @@ func doTestClient(s *testing.T, client Client) {
 			CreditAccountID: accountA.ID,
 			DebitAccountID:  accountB.ID,
 			Amount:          50,
-			Flags:           types.TransferFlags{Linked: true}.ToUint32(), // points to transfer 2
+			Flags:           types.TransferFlags{Linked: true}.ToUint16(), // points to transfer 2
 			Code:            1,
 		}
 		transfer2 := types.Transfer{
@@ -217,16 +217,16 @@ func doTestClient(s *testing.T, client Client) {
 		assert.Len(t, accounts, 2)
 
 		accountA = accounts[0]
-		assert.Equal(t, uint64(150), accountA.CreditsAccepted)
-		assert.Equal(t, uint64(0), accountA.CreditsReserved)
-		assert.Equal(t, uint64(0), accountA.DebitsAccepted)
-		assert.Equal(t, uint64(0), accountA.DebitsReserved)
+		assert.Equal(t, uint64(150), accountA.CreditsPosted)
+		assert.Equal(t, uint64(0), accountA.CreditsPending)
+		assert.Equal(t, uint64(0), accountA.DebitsPosted)
+		assert.Equal(t, uint64(0), accountA.DebitsPending)
 
 		accountB = accounts[1]
-		assert.Equal(t, uint64(0), accountB.CreditsAccepted)
-		assert.Equal(t, uint64(0), accountB.CreditsReserved)
-		assert.Equal(t, uint64(150), accountB.DebitsAccepted)
-		assert.Equal(t, uint64(0), accountB.DebitsReserved)
+		assert.Equal(t, uint64(0), accountB.CreditsPosted)
+		assert.Equal(t, uint64(0), accountB.CreditsPending)
+		assert.Equal(t, uint64(150), accountB.DebitsPosted)
+		assert.Equal(t, uint64(0), accountB.DebitsPending)
 	})
 }
 

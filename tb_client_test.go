@@ -129,7 +129,7 @@ func doTestClient(s *testing.T, client Client) {
 
 		assert.Len(t, results, 2)
 		accA := results[0]
-		assert.Equal(t, uint16(1), accA.Ledger)
+		assert.Equal(t, uint32(1), accA.Ledger)
 		assert.Equal(t, uint16(1), accA.Code)
 		assert.Equal(t, uint16(0), accA.Flags)
 		assert.Equal(t, uint64(0), accA.DebitsPending)
@@ -137,9 +137,10 @@ func doTestClient(s *testing.T, client Client) {
 		assert.Equal(t, uint64(0), accA.CreditsPending)
 		assert.Equal(t, uint64(0), accA.CreditsPosted)
 		assert.NotEqual(t, uint64(0), accA.TimeStamp)
+		assert.Equal(t, unsafe.Sizeof(accA), 128)
 
 		accB := results[1]
-		assert.Equal(t, uint16(1), accB.Ledger)
+		assert.Equal(t, uint32(1), accB.Ledger)
 		assert.Equal(t, uint16(2), accB.Code)
 		assert.Equal(t, uint16(0), accB.Flags)
 		assert.Equal(t, uint64(0), accB.DebitsPending)
@@ -171,16 +172,16 @@ func doTestClient(s *testing.T, client Client) {
 		assert.Len(t, accounts, 2)
 
 		accountA = accounts[0]
-		assert.Equal(t, uint64(100), accountA.CreditsPosted)
-		assert.Equal(t, uint64(0), accountA.CreditsPending)
-		assert.Equal(t, uint64(0), accountA.DebitsPosted)
 		assert.Equal(t, uint64(0), accountA.DebitsPending)
+		assert.Equal(t, uint64(0), accountA.DebitsPosted)
+		assert.Equal(t, uint64(0), accountA.CreditsPending)
+		assert.Equal(t, uint64(100), accountA.CreditsPosted)
 
 		accountB = accounts[1]
-		assert.Equal(t, uint64(0), accountB.CreditsPosted)
-		assert.Equal(t, uint64(0), accountB.CreditsPending)
-		assert.Equal(t, uint64(100), accountB.DebitsPosted)
 		assert.Equal(t, uint64(0), accountB.DebitsPending)
+		assert.Equal(t, uint64(100), accountB.DebitsPosted)
+		assert.Equal(t, uint64(0), accountB.CreditsPending)
+		assert.Equal(t, uint64(0), accountB.CreditsPosted)		
 	})
 
 	s.Run("can create linked transfers", func(t *testing.T) {
@@ -207,6 +208,7 @@ func doTestClient(s *testing.T, client Client) {
 			t.Fatal(err)
 		}
 		assert.Len(t, results, 2)
+		assert.Equal(t, unsafe.Sizeof(transfer1), 128)
 		assert.Equal(t, types.EventResult{Index: 0, Code: types.TransferLinkedEventFailed}, results[0])
 		assert.Equal(t, types.EventResult{Index: 1, Code: types.TransferExistsWithDifferentFlags}, results[1])
 

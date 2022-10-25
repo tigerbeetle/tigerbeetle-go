@@ -4,11 +4,10 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/tigerbeetledb/tigerbeetle-go.svg)](https://pkg.go.dev/github.com/tigerbeetledb/tigerbeetle-go)
 
-## Usage
-
 ## Basic example
 
-See [./samples/basic](./samples/basic) for a minimal Go project showing most features of the client.
+See [./samples/basic](./samples/basic) for a minimal Go project
+showing most features of the client.
 
 ## Development Setup
 

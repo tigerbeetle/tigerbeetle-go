@@ -21,6 +21,8 @@ type Uint128 C.tb_uint128_t
 func (value Uint128) String() string {
 	bytes := *(*[16]byte)(unsafe.Pointer(&value))
 	s := hex.EncodeToString(bytes[:16])
+
+	// Prettier to drop preceeding zeros so you get "0" instead of "0000000000000000"
 	lastNonZero := 0
 	for s[lastNonZero] == '0' && lastNonZero < len(s)-1 {
 		lastNonZero++

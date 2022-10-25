@@ -4,6 +4,8 @@ package types
 #include "../native/tb_client.h"
 */
 import "C"
+import "encoding/hex"
+import "unsafe"
 
 type Operation uint8
 
@@ -15,6 +17,39 @@ const (
 )
 
 type Uint128 C.tb_uint128_t
+
+func (value Uint128) String() string {
+	bytes := *(*[16]byte)(unsafe.Pointer(&value))
+	s := hex.EncodeToString(bytes[:16])
+	lastNonZero := 0
+	for s[lastNonZero] == '0' && lastNonZero < len(s)-1 {
+		lastNonZero++
+	}
+	return s[lastNonZero:]
+}
+
+// HexStringToUint128 converts a hex-encoded integer to a Uint128.
+func HexStringToUint128(value string) (Uint128, error) {
+	// Pad string to two hex digits
+	if len(value)%2 == 1 {
+		value = "0" + value
+	}
+
+	bs, err := hex.DecodeString(value)
+	if err != nil {
+		return Uint128{}, err
+	}
+
+	buffered := [16]byte{}
+	copy(buffered[16-len(bs):], bs)
+
+	return *(*Uint128)(unsafe.Pointer(&buffered[0])), nil
+}
+
+// Uint64ToUint128 upgrades a 64-bit integer to a Uint128.
+func Uint64ToUint128(value uint64) Uint128 {
+	return *(*Uint128)(unsafe.Pointer(&value))
+}
 
 // EventResult is returned from TB only when an error occurred processing it.
 type EventResult struct {

@@ -30,7 +30,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - run: zgo.bat test ./...
+      - run: ./zgo.bat test ./...
 
   build_sample:
     strategy:

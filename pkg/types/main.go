@@ -48,11 +48,6 @@ func HexStringToUint128(value string) (Uint128, error) {
 	return *(*Uint128)(unsafe.Pointer(&buffered[0])), nil
 }
 
-// Uint64ToUint128 upgrades a 64-bit integer to a Uint128.
-func Uint64ToUint128(value uint64) Uint128 {
-	return *(*Uint128)(unsafe.Pointer(&value))
-}
-
 // EventResult is returned from TB only when an error occurred processing it.
 type EventResult struct {
 	Index uint32

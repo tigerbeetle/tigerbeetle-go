@@ -1,0 +1,24 @@
+version: "3.7"
+
+services:
+  tigerbeetle_init:
+    image: ghcr.io/tigerbeetledb/tigerbeetle
+    command: "format --cluster=0 --replica=0 /data/0_0.tigerbeetle"
+    volumes:
+      - ./data:/data
+
+  tigerbeetle:
+    image: ghcr.io/tigerbeetledb/tigerbeetle
+    command: "start --addresses=0.0.0.0:3000 /data/0_0.tigerbeetle"
+    depends_on: [tigerbeetle_init]
+    network_mode: host
+    cap_add: [IPC_LOCK]
+    restart: always
+    volumes:
+      - ./data:/data
+
+  sample:
+    build: .
+    command: "bash -c echo nothing"
+    depends_on: [tigerbeetle]
+    network_mode: host

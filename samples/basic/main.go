@@ -1,6 +1,7 @@
 package main
 
 import (
+	"time"
 	"fmt"
 	"log"
 
@@ -49,11 +50,11 @@ func main() {
 
 	// Send money from one account to another
 	SAMPLES := 1_000_000
-	BATCH_SIZE := 1000
+	BATCH_SIZE := 8191
 	batch := make([]tb_types.Transfer, BATCH_SIZE)
 	for i := 0; i < SAMPLES; i += BATCH_SIZE {
 		for j := 0; j < BATCH_SIZE; j++ {
-			batch[i+j] = tb_types.Transfer{
+			batch[j] = tb_types.Transfer{
 				ID:              uint128(fmt.Sprintf("%d", i+j+1)),
 				DebitAccountID:  uint128("1"),
 				CreditAccountID: uint128("2"),
@@ -63,11 +64,18 @@ func main() {
 			}
 		}
 
+		if i + BATCH_SIZE > SAMPLES {
+			batch = batch[:SAMPLES - i]
+		}
+
+		t := time.Now()
+		fmt.Println("Started batch\t\t", i, "\t\t", t)
 		res, err := client.CreateTransfers(batch)
 		if err != nil {
 			log.Printf("Error creating transfer batch %d: %s", i, err)
 			return
 		}
+		fmt.Println("Done batch\t\t", i,"\t\t", time.Now(), "\t\t", time.Now().Sub(t))
 
 		for _, err := range res {
 			log.Printf("Error creating transfer %d: %s", err.Index+uint32(i), err.Code)

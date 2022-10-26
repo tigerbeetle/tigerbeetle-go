@@ -19,8 +19,12 @@ const (
 
 type Uint128 C.tb_uint128_t
 
+func (value Uint128) Bytes() [16]byte {
+	return *(*[16]byte)(unsafe.Pointer(&value))
+}
+
 func (value Uint128) String() string {
-	bytes := *(*[16]byte)(unsafe.Pointer(&value))
+	bytes := value.Bytes()
 	s := hex.EncodeToString(bytes[:16])
 
 	// Prettier to drop preceeding zeros so you get "0" instead of "0000000000000000"

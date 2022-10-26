@@ -31,11 +31,12 @@ func (value Uint128) String() string {
 	return s[lastNonZero:]
 }
 
+// BytesToUint128 converts a raw [16]byte value to Uint128.
 func BytesToUint128(value [16]byte) Uint128 {
 	return *(*Uint128)(unsafe.Pointer(&value[0]))
 }
 
-// HexStringToUint128 converts a hex-encoded integer to a Uint128.
+// HexBytesToUint128 converts a hex-encoded integer to a Uint128.
 func HexBytesToUint128(value [32]byte) (Uint128, error) {
 	decoded := [16]byte{}
 	_, err := hex.Decode(decoded[:], value[:])
@@ -46,6 +47,7 @@ func HexBytesToUint128(value [32]byte) (Uint128, error) {
 	return BytesToUint128(decoded), nil
 }
 
+// HexStringToUint128 converts a hex-encoded integer to a Uint128.
 func HexStringToUint128(value string) (Uint128, error) {
 	if len(value) > 32 {
 		return Uint128{}, fmt.Errorf("Uint128 hex string must not be more than 32 bytes.")

@@ -5,6 +5,7 @@ package types
 */
 import "C"
 import "encoding/hex"
+import "fmt"
 import "unsafe"
 
 type Operation uint8
@@ -30,22 +31,38 @@ func (value Uint128) String() string {
 	return s[lastNonZero:]
 }
 
-// HexStringToUint128 converts a hex-encoded integer to a Uint128.
-func HexStringToUint128(value string) (Uint128, error) {
-	// Pad string to two hex digits
-	if len(value)%2 == 1 {
-		value = "0" + value
-	}
+func BytesToUint128(value [16]byte) Uint128 {
+	return *(*Uint128)(unsafe.Pointer(&value[0]))
+}
 
-	bs, err := hex.DecodeString(value)
+// HexStringToUint128 converts a hex-encoded integer to a Uint128.
+func HexBytesToUint128(value [32]byte) (Uint128, error) {
+	decoded := [16]byte{}
+	_, err := hex.Decode(decoded[:], value[:])
 	if err != nil {
 		return Uint128{}, err
 	}
 
-	buffered := [16]byte{}
-	copy(buffered[16-len(bs):], bs)
+	return BytesToUint128(decoded), nil
+}
 
-	return *(*Uint128)(unsafe.Pointer(&buffered[0])), nil
+func HexStringToUint128(value string) (Uint128, error) {
+	if len(value) > 32 {
+		return Uint128{}, fmt.Errorf("Uint128 hex string must not be more than 32 bytes.")
+	}
+	if len(value)%2 == 1 {
+		value = "0" + value
+	}
+	// Pad with zeroes
+	bytes := [32]byte{}
+	for i := range bytes {
+		if i < 32-len(value) {
+			bytes[i] = '0'
+		} else {
+			bytes[i] = value[i-(32-len(value))]
+		}
+	}
+	return HexBytesToUint128(bytes)
 }
 
 // EventResult is returned from TB only when an error occurred processing it.

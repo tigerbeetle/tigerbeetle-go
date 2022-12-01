@@ -1,2 +1,2 @@
 # tigerbeetle-go
-This repo has been automatically generated from [tigerbeetledb/tigerbeetle@3653d2d5af6a269738c75650c563a683700a9cb5](https://github.com/tigerbeetledb/tigerbeetle/commit/3653d2d5af6a269738c75650c563a683700a9cb5). Please see [tigerbeetledb/tigerbeetle](https://github.com/tigerbeetledb/tigerbeetle) for documentation and contributions.
+This repo has been automatically generated from [tigerbeetledb/tigerbeetle@b514eda2978ae2262d6644f6899b4502d58d764a](https://github.com/tigerbeetledb/tigerbeetle/commit/b514eda2978ae2262d6644f6899b4502d58d764a). Please see [tigerbeetledb/tigerbeetle](https://github.com/tigerbeetledb/tigerbeetle) for documentation and contributions.

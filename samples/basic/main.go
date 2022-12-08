@@ -49,11 +49,11 @@ func main() {
 
 	// Send money from one account to another
 	SAMPLES := 1_000_000
-	BATCH_SIZE := 1000
+	BATCH_SIZE := 8191
 	batch := make([]tb_types.Transfer, BATCH_SIZE)
 	for i := 0; i < SAMPLES; i += BATCH_SIZE {
-		for j := 0; j < BATCH_SIZE; j++ {
-			batch[i+j] = tb_types.Transfer{
+		for j := 0; (j < BATCH_SIZE) && (i + j < SAMPLES); j++ {
+			batch[j] = tb_types.Transfer{
 				ID:              uint128(fmt.Sprintf("%d", i+j+1)),
 				DebitAccountID:  uint128("1"),
 				CreditAccountID: uint128("2"),
@@ -70,7 +70,10 @@ func main() {
 		}
 
 		for _, err := range res {
-			log.Printf("Error creating transfer %d: %s", err.Index+uint32(i), err.Code)
+			id := int(err.Index) + i;
+			if (id < SAMPLES) {
+				log.Printf("Error creating transfer %d: %s", id, err.Code)
+			}
 			return
 		}
 	}

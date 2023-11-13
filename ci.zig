@@ -9,6 +9,8 @@ const Shell = @import("../../shell.zig");
 const TmpTigerBeetle = @import("../../testing/tmp_tigerbeetle.zig");
 
 pub fn tests(shell: *Shell, gpa: std.mem.Allocator) !void {
+    assert(shell.file_exists("go.mod"));
+
     // No unit tests for Go :-(
 
     // `go build`  won't compile the native library automatically, we need to do that ourselves.
@@ -31,10 +33,8 @@ pub fn tests(shell: *Shell, gpa: std.mem.Allocator) !void {
     };
 
     inline for (.{ "basic", "two-phase", "two-phase-many" }) |sample| {
-        var sample_dir = try shell.project_root.openDir("src/clients/go/samples/" ++ sample, .{});
-        defer sample_dir.close();
-
-        try sample_dir.setAsCwd();
+        try shell.pushd("./samples/" ++ sample);
+        defer shell.popd();
 
         var tmp_beetle = try TmpTigerBeetle.init(gpa, .{});
         defer tmp_beetle.deinit(gpa);
@@ -47,17 +47,26 @@ pub fn tests(shell: *Shell, gpa: std.mem.Allocator) !void {
     }
 }
 
-pub fn verify_release(shell: *Shell, gpa: std.mem.Allocator, tmp_dir: std.fs.Dir) !void {
-    var tmp_beetle = try TmpTigerBeetle.init(gpa, .{});
+pub fn validate_release(shell: *Shell, gpa: std.mem.Allocator, options: struct {
+    version: []const u8,
+    tigerbeetle: []const u8,
+}) !void {
+    var tmp_beetle = try TmpTigerBeetle.init(gpa, .{
+        .prebuilt = options.tigerbeetle,
+    });
     defer tmp_beetle.deinit(gpa);
 
+    try shell.env.put("TB_ADDRESS", tmp_beetle.port_str.slice());
+
     try shell.exec("go mod init tbtest", .{});
-    try shell.exec("go get github.com/tigerbeetle/tigerbeetle-go", .{});
+    try shell.exec("go get github.com/tigerbeetle/tigerbeetle-go@v{version}", .{
+        .version = options.version,
+    });
 
     try Shell.copy_path(
         shell.project_root,
         "src/clients/go/samples/basic/main.go",
-        tmp_dir,
+        shell.cwd,
         "main.go",
     );
     const zig_exe = try shell.project_root.realpathAlloc(

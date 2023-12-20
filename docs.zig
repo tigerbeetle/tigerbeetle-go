@@ -153,7 +153,7 @@ pub const GoDocs = Docs{
     \\if len(tbAddress) == 0 {
     \\  tbAddress = "3000"
     \\}
-    \\client, err := NewClient(ToUint128(0), []string{tbAddress}, 32)
+    \\client, err := NewClient(ToUint128(0), []string{tbAddress}, 256)
     \\if err != nil {
     \\	log.Printf("Error creating client: %s", err)
     \\	return
@@ -163,7 +163,7 @@ pub const GoDocs = Docs{
 
     .client_object_documentation =
     \\The third argument to `NewClient` is a `uint` max concurrency
-    \\setting. `32` is a good default and can increase to `4096`
+    \\setting. `256` is a good default and can increase to `8192`
     \\as you need increased throughput.
     ,
 
@@ -356,6 +356,25 @@ pub const GoDocs = Docs{
     \\log.Println(transfers)
     ,
 
+    .get_account_transfers_example =
+    \\filter := GetAccountTransfers{
+    \\		AccountID: ToUint128(2),
+    \\		Timestamp: 0, // No filter by Timestamp.
+    \\		Limit:     10, // Limit to ten transfers at most.
+    \\		Flags:     GetAccountTransfersFlags{
+    \\			Debits:    true, // Include transfer from the debit side.
+    \\			Credits:   true, // Include transfer from the credit side.
+    \\			Reversed:  true, // Sort by timestamp in reverse-chronological order.
+    \\		}.ToUint32(),
+    \\}
+    \\transfers, err = client.GetAccountTransfers(filter)
+    \\if err != nil {
+    \\	log.Printf("Could not fetch transfers: %s", err)
+    \\	return
+    \\}
+    \\log.Println(transfers)
+    ,
+
     .linked_events_example =
     \\batch := []Transfer{}
     \\linkedFlag := TransferFlags{Linked: true}.ToUint16()
@@ -389,7 +408,7 @@ pub const GoDocs = Docs{
     // Extra steps to determine commit and repo so this works in
     // CI against forks and pull requests.
     .developer_setup_sh_commands =
-    \\./zig/zig build go_client -Doptimize=ReleaseSafe -Dconfig=production
+    \\./zig/zig build go_client -Drelease -Dconfig=production
     \\cd src/clients/go
     \\if [ "$TEST" = "true" ]; then go test; else echo "Skipping client unit tests"; fi
     ,
@@ -400,7 +419,7 @@ pub const GoDocs = Docs{
     // Extra steps to determine commit and repo so this works in
     // CI against forks and pull requests.
     .developer_setup_pwsh_commands =
-    \\.\zig\zig build go_client -Doptimize=ReleaseSafe -Dconfig=production
+    \\.\zig\zig build go_client -Drelease -Dconfig=production
     \\cd src\clients\go
     \\if ($env:TEST -eq 'true') { go test } else { echo "Skipping client unit test" }
     ,

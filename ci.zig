@@ -12,7 +12,8 @@ pub fn tests(shell: *Shell, gpa: std.mem.Allocator) !void {
     assert(shell.file_exists("go.mod"));
 
     // `go build`  won't compile the native library automatically, we need to do that ourselves.
-    try shell.zig("build go_client -Drelease -Dconfig=production", .{});
+    try shell.zig("build clients:go -Drelease -Dconfig=production", .{});
+    try shell.zig("build -Drelease -Dconfig=production", .{});
 
     // Although we have compiled the TigerBeetle client library, we still need `cgo` to link it with
     // our resulting Go binary. Strictly speaking, `CC` is controlled by the users of TigerBeetle,
@@ -22,38 +23,38 @@ pub fn tests(shell: *Shell, gpa: std.mem.Allocator) !void {
     //     reproducible
     //   - (implicitly) use `gcc` on Mac, as `zig cc` doesn't work there:
     //     <https://github.com/ziglang/zig/issues/15438>
-    const zig_cc = if (builtin.os.tag == .macos) void else cc: {
-        const zig_exe = try shell.project_root.realpathAlloc(
-            shell.arena.allocator(),
-            comptime "zig/zig" ++ builtin.target.exeFileExt(),
-        );
-        break :cc try shell.print("{s} cc", .{zig_exe});
-    };
+    switch (builtin.os.tag) {
+        .linux, .windows => {
+            const zig_cc = try shell.fmt("{s} cc", .{shell.zig_exe.?});
+            try shell.env.put("CC", zig_cc);
+        },
+        .macos => {},
+        else => unreachable,
+    }
 
-    // Building the server before running the integrated tests:
-    try shell.zig("build install -Drelease -Dconfig=production", .{});
     try shell.exec("go test", .{});
+    {
+        log.info("testing `types` package helpers", .{});
+
+        try shell.pushd("./pkg/types");
+        defer shell.popd();
+
+        try shell.exec("go test", .{});
+    }
 
     inline for (.{ "basic", "two-phase", "two-phase-many", "walkthrough" }) |sample| {
+        log.info("testing sample '{s}'", .{sample});
+
         try shell.pushd("./samples/" ++ sample);
         defer shell.popd();
 
         var tmp_beetle = try TmpTigerBeetle.init(gpa, .{});
         defer tmp_beetle.deinit(gpa);
+        errdefer tmp_beetle.log_stderr();
 
-        if (builtin.os.tag != .macos) {
-            try shell.env.put("CC", zig_cc);
-        }
         try shell.env.put("TB_ADDRESS", tmp_beetle.port_str.slice());
-        try shell.exec("go run main.go", .{});
-    }
-
-    // Test the `types` package helpers
-    {
-        try shell.pushd("./pkg/types");
-        defer shell.popd();
-
-        try shell.exec("go test", .{});
+        try shell.exec("go build main.go", .{});
+        try shell.exec("./main" ++ builtin.target.exeFileExt(), .{});
     }
 }
 
@@ -65,6 +66,7 @@ pub fn validate_release(shell: *Shell, gpa: std.mem.Allocator, options: struct {
         .prebuilt = options.tigerbeetle,
     });
     defer tmp_beetle.deinit(gpa);
+    errdefer tmp_beetle.log_stderr();
 
     try shell.env.put("TB_ADDRESS", tmp_beetle.port_str.slice());
 
@@ -79,11 +81,7 @@ pub fn validate_release(shell: *Shell, gpa: std.mem.Allocator, options: struct {
         shell.cwd,
         "main.go",
     );
-    const zig_exe = try shell.project_root.realpathAlloc(
-        shell.arena.allocator(),
-        comptime "zig/zig" ++ builtin.target.exeFileExt(),
-    );
-    const zig_cc = try shell.print("{s} cc", .{zig_exe});
+    const zig_cc = try shell.fmt("{s} cc", .{shell.zig_exe.?});
 
     try shell.env.put("CC", zig_cc);
     try shell.exec("go run main.go", .{});

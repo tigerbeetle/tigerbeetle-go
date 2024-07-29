@@ -19,7 +19,7 @@ func main() {
 	if len(tbAddress) == 0 {
 		tbAddress = "3000"
 	}
-	client, err := NewClient(ToUint128(0), []string{tbAddress}, 256)
+	client, err := NewClient(ToUint128(0), []string{tbAddress})
 	if err != nil {
 		log.Printf("Error creating client: %s", err)
 		return
@@ -194,6 +194,7 @@ func main() {
 			Reversed: true, // Sort by timestamp in reverse-chronological order.
 		}.ToUint32(),
 	}
+
 	transfers, err = client.GetAccountTransfers(filter)
 	if err != nil {
 		log.Printf("Could not fetch transfers: %s", err)
@@ -214,6 +215,7 @@ func main() {
 			Reversed: true, // Sort by timestamp in reverse-chronological order.
 		}.ToUint32(),
 	}
+
 	account_balances, err := client.GetAccountBalances(filter)
 	if err != nil {
 		log.Printf("Could not fetch the history: %s", err)
@@ -221,6 +223,52 @@ func main() {
 	}
 	log.Println(account_balances)
 	// endsection:get-account-balances
+
+	// section:query-accounts
+	query_filter := QueryFilter{
+		UserData128:  ToUint128(1000), // Filter by UserData
+		UserData64:   100,
+		UserData32:   10,
+		Code:         1,  // Filter by Code
+		Ledger:       0,  // No filter by Ledger
+		TimestampMin: 0,  // No filter by Timestamp.
+		TimestampMax: 0,  // No filter by Timestamp.
+		Limit:        10, // Limit to ten balances at most.
+		Flags: QueryFilterFlags{
+			Reversed: true, // Sort by timestamp in reverse-chronological order.
+		}.ToUint32(),
+	}
+
+	query_accounts, err := client.QueryAccounts(query_filter)
+	if err != nil {
+		log.Printf("Could not query accounts: %s", err)
+		return
+	}
+	log.Println(query_accounts)
+	// endsection:query-accounts
+
+	// section:query-transfers
+	query_filter = QueryFilter{
+		UserData128:  ToUint128(1000), // Filter by UserData.
+		UserData64:   100,
+		UserData32:   10,
+		Code:         1,  // Filter by Code.
+		Ledger:       0,  // No filter by Ledger.
+		TimestampMin: 0,  // No filter by Timestamp.
+		TimestampMax: 0,  // No filter by Timestamp.
+		Limit:        10, // Limit to ten balances at most.
+		Flags: QueryFilterFlags{
+			Reversed: true, // Sort by timestamp in reverse-chronological order.
+		}.ToUint32(),
+	}
+
+	query_transfers, err := client.QueryTransfers(query_filter)
+	if err != nil {
+		log.Printf("Could not query transfers: %s", err)
+		return
+	}
+	log.Println(query_transfers)
+	// endsection:query-transfers
 
 	// section:linked-events
 	batch := []Transfer{}

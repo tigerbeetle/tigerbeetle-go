@@ -9,7 +9,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
- 
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -158,29 +158,6 @@ typedef struct tb_create_transfers_result_t {
     uint32_t result;
 } tb_create_transfers_result_t;
 
-typedef enum TB_OPERATION {
-    TB_OPERATION_PULSE = 128,
-    TB_OPERATION_CREATE_ACCOUNTS = 129,
-    TB_OPERATION_CREATE_TRANSFERS = 130,
-    TB_OPERATION_LOOKUP_ACCOUNTS = 131,
-    TB_OPERATION_LOOKUP_TRANSFERS = 132,
-    TB_OPERATION_GET_ACCOUNT_TRANSFERS = 133,
-    TB_OPERATION_GET_ACCOUNT_BALANCES = 134,
-} TB_OPERATION;
-
-typedef enum TB_PACKET_STATUS {
-    TB_PACKET_OK = 0,
-    TB_PACKET_TOO_MUCH_DATA = 1,
-    TB_PACKET_INVALID_OPERATION = 2,
-    TB_PACKET_INVALID_DATA_SIZE = 3,
-} TB_PACKET_STATUS;
-
-typedef enum TB_PACKET_ACQUIRE_STATUS {
-    TB_PACKET_ACQUIRE_OK = 0,
-    TB_PACKET_ACQUIRE_CONCURRENCY_MAX_EXCEEDED = 1,
-    TB_PACKET_ACQUIRE_SHUTDOWN = 2,
-} TB_PACKET_ACQUIRE_STATUS;
-
 typedef struct tb_account_filter_t {
     tb_uint128_t account_id;
     uint64_t timestamp_min;
@@ -205,6 +182,26 @@ typedef struct tb_account_balance_t {
     uint8_t reserved[56];
 } tb_account_balance_t;
 
+typedef enum TB_OPERATION {
+    TB_OPERATION_PULSE = 128,
+    TB_OPERATION_CREATE_ACCOUNTS = 129,
+    TB_OPERATION_CREATE_TRANSFERS = 130,
+    TB_OPERATION_LOOKUP_ACCOUNTS = 131,
+    TB_OPERATION_LOOKUP_TRANSFERS = 132,
+    TB_OPERATION_GET_ACCOUNT_TRANSFERS = 133,
+    TB_OPERATION_GET_ACCOUNT_BALANCES = 134,
+    TB_OPERATION_QUERY_ACCOUNTS = 135,
+    TB_OPERATION_QUERY_TRANSFERS = 136,
+} TB_OPERATION;
+
+typedef enum TB_PACKET_STATUS {
+    TB_PACKET_OK = 0,
+    TB_PACKET_TOO_MUCH_DATA = 1,
+    TB_PACKET_CLIENT_SHUTDOWN = 2,
+    TB_PACKET_INVALID_OPERATION = 3,
+    TB_PACKET_INVALID_DATA_SIZE = 4,
+} TB_PACKET_STATUS;
+
 typedef struct tb_packet_t {
     struct tb_packet_t* next;
     void* user_data;
@@ -212,6 +209,10 @@ typedef struct tb_packet_t {
     uint8_t status;
     uint32_t data_size;
     void* data;
+    struct tb_packet_t* batch_next;
+    struct tb_packet_t* batch_tail;
+    uint32_t batch_size;
+    uint8_t reserved[8];
 } tb_packet_t;
 
 typedef void* tb_client_t; 
@@ -222,46 +223,48 @@ typedef enum TB_STATUS {
     TB_STATUS_OUT_OF_MEMORY = 2,
     TB_STATUS_ADDRESS_INVALID = 3,
     TB_STATUS_ADDRESS_LIMIT_EXCEEDED = 4,
-    TB_STATUS_CONCURRENCY_MAX_INVALID = 5,
-    TB_STATUS_SYSTEM_RESOURCES = 6,
-    TB_STATUS_NETWORK_SUBSYSTEM = 7,
+    TB_STATUS_SYSTEM_RESOURCES = 5,
+    TB_STATUS_NETWORK_SUBSYSTEM = 6,
 } TB_STATUS;
 
+// Initialize a new TigerBeetle client which connects to the addresses provided and 
+// completes submitted packets by invoking the callback with the given context.
 TB_STATUS tb_client_init(
     tb_client_t* out_client,
     tb_uint128_t cluster_id,
     const char* address_ptr,
     uint32_t address_len,
-    uint32_t packets_count,
     uintptr_t on_completion_ctx,
-    void (*on_completion_fn)(uintptr_t, tb_client_t, tb_packet_t*, const uint8_t*, uint32_t)
+    void (*on_completion)(uintptr_t, tb_client_t, tb_packet_t*, const uint8_t*, uint32_t)
 );
 
+// Initialize a new TigerBeetle client which echos back any data submitted.
 TB_STATUS tb_client_init_echo(
     tb_client_t* out_client,
     tb_uint128_t cluster_id,
     const char* address_ptr,
     uint32_t address_len,
-    uint32_t packets_count,
     uintptr_t on_completion_ctx,
-    void (*on_completion_fn)(uintptr_t, tb_client_t, tb_packet_t*, const uint8_t*, uint32_t)
+    void (*on_completion)(uintptr_t, tb_client_t, tb_packet_t*, const uint8_t*, uint32_t)
 );
 
-TB_PACKET_ACQUIRE_STATUS tb_client_acquire_packet(
-    tb_client_t client,
-    tb_packet_t** out_packet
+// Retrieve the callback context initially passed into `tb_client_init` or 
+// `tb_client_init_echo`.
+uintptr_t tb_client_completion_context(
+    tb_client_t client
 );
 
-void tb_client_release_packet(
-    tb_client_t client,
-    tb_packet_t* packet
-);
-
+// Submit a packet with its operation, data, and data_size fields set.
+// Once completed, `on_completion` will be invoked with `on_completion_ctx` and the given
+// packet on the `tb_client` thread (separate from caller's thread).
 void tb_client_submit(
     tb_client_t client,
     tb_packet_t* packet
 );
 
+// Closes the client, causing any previously submitted packets to be completed with
+// `TB_PACKET_CLIENT_SHUTDOWN` before freeing any allocated client resources from init.
+// It is undefined behavior to use any functions on the client once deinit is called.
 void tb_client_deinit(
     tb_client_t client
 );

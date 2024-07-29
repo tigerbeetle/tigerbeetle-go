@@ -57,7 +57,7 @@ func main() {
 		port = "3000"
 	}
 
-	client, err := NewClient(ToUint128(0), []string{port}, 256)
+	client, err := NewClient(ToUint128(0), []string{port})
 	if err != nil {
 		log.Fatalf("Error creating client: %s", err)
 	}
@@ -315,7 +315,7 @@ func main() {
 		},
 	}, "after completing 4 pending transfers")
 
-	// Create a 10th transfer voiding the 5th transfer.
+	// Create a 10th transfer posting the 5th transfer.
 	transferRes, err = client.CreateTransfers([]Transfer{
 		{
 			ID:              ToUint128(10),
@@ -336,7 +336,7 @@ func main() {
 		log.Fatalf("Error creating transfer: %s", err.Result)
 	}
 
-	// Validate account balances after voiding 4th pending transfer.
+	// Validate account balances after posting 5th pending transfer.
 	assertAccountBalances(client, []Account{
 		{
 			ID:             ToUint128(1),

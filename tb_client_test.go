@@ -347,6 +347,46 @@ func doTestClient(t *testing.T, client Client) {
 		assert.True(t, !accounts[1].AccountFlags().Closed)
 	})
 
+	t.Run("accept zero-length create_accounts", func(t *testing.T) {
+		t.Parallel()
+		results, err := client.CreateAccounts([]types.Account{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Empty(t, results)
+	})
+
+	t.Run("accept zero-length create_transfers", func(t *testing.T) {
+		t.Parallel()
+		results, err := client.CreateTransfers([]types.Transfer{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Empty(t, results)
+	})
+
+	t.Run("accept zero-length lookup_accounts", func(t *testing.T) {
+		t.Parallel()
+		results, err := client.LookupAccounts([]types.Uint128{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Empty(t, results)
+	})
+
+	t.Run("accept zero-length lookup_transfers", func(t *testing.T) {
+		t.Parallel()
+		results, err := client.LookupTransfers([]types.Uint128{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Empty(t, results)
+	})
+
 	t.Run("can create concurrent transfers", func(t *testing.T) {
 		accountA, accountB := createTwoAccounts(t)
 
@@ -400,6 +440,54 @@ func doTestClient(t *testing.T, client Client) {
 		// so the credit/debit must differ from TRANSFERS_MAX units:
 		assert.Equal(t, TRANSFERS_MAX, big.NewInt(0).Sub(&accountACreditsAfter, &accountACredits).Int64())
 		assert.Equal(t, TRANSFERS_MAX, big.NewInt(0).Sub(&accountBDebitsAfter, &accountBDebits).Int64())
+	})
+
+	t.Run("can create concurrent linked chains", func(t *testing.T) {
+		accountA, accountB := createTwoAccounts(t)
+
+		// NB: this test is _not_ parallel, so can use up all the concurrency.
+		const TRANSFERS_MAX = 10_000
+
+		accounts, err := client.LookupAccounts([]types.Uint128{accountA.ID, accountB.ID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Len(t, accounts, 2)
+
+		var waitGroup sync.WaitGroup
+		for i := 0; i < TRANSFERS_MAX; i++ {
+			waitGroup.Add(1)
+			go func(i int) {
+				defer waitGroup.Done()
+
+				// The Linked flag will cause the
+				// batch to fail due to LinkedEventChainOpen.
+				flags := types.TransferFlags{Linked: i%10 == 0}.ToUint16()
+				results, err := client.CreateTransfers([]types.Transfer{
+					{
+						ID:              types.ID(),
+						CreditAccountID: accountA.ID,
+						DebitAccountID:  accountB.ID,
+						Amount:          types.ToUint128(1),
+						Ledger:          1,
+						Code:            1,
+						Flags:           flags,
+					},
+				})
+
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if i%10 == 0 {
+					assert.Len(t, results, 1)
+					assert.Equal(t, results[0].Result, types.TransferLinkedEventChainOpen)
+				} else {
+					assert.Empty(t, results)
+				}
+			}(i)
+		}
+		waitGroup.Wait()
 	})
 
 	t.Run("can query transfers for an account", func(t *testing.T) {

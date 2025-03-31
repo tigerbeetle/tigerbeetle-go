@@ -1,6 +1,6 @@
 # tigerbeetle-go
 This repo has been automatically generated from
-[tigerbeetle/tigerbeetle@972367f51e187d5bce7e04d868b787332c2701a5](https://github.com/tigerbeetle/tigerbeetle/commit/972367f51e187d5bce7e04d868b787332c2701a5)
+[tigerbeetle/tigerbeetle@775e734cc707e602271db8fbf181111ccf96d825](https://github.com/tigerbeetle/tigerbeetle/commit/775e734cc707e602271db8fbf181111ccf96d825)
 to keep binary blobs out of the monorepo.
 
 Please see

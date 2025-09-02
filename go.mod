@@ -37,4 +37,4 @@ require (
 )
 
 // force cli to be 0.16.51 // we have a 0.16.51 server but if we use the cli above 0.16.33 in test, it fails, broken pipe
-replace github.com/tigerbeetle/tigerbeetle-go v0.16.57 => github.com/tigerbeetle/tigerbeetle-go v0.16.33
+replace github.com/tigerbeetle/tigerbeetle-go v0.16.57 => github.com/tigerbeetle/tigerbeetle-go v0.16.51

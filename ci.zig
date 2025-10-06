@@ -60,7 +60,7 @@ pub fn tests(shell: *Shell, gpa: std.mem.Allocator) !void {
         defer tmp_beetle.deinit(gpa);
         errdefer tmp_beetle.log_stderr();
 
-        try shell.env.put("TB_ADDRESS", tmp_beetle.port_str.slice());
+        try shell.env.put("TB_ADDRESS", tmp_beetle.port_str);
         try shell.exec("go build main.go", .{});
         try shell.exec("./main" ++ builtin.target.exeFileExt(), .{});
     }
@@ -77,7 +77,7 @@ pub fn validate_release(shell: *Shell, gpa: std.mem.Allocator, options: struct {
     defer tmp_beetle.deinit(gpa);
     errdefer tmp_beetle.log_stderr();
 
-    try shell.env.put("TB_ADDRESS", tmp_beetle.port_str.slice());
+    try shell.env.put("TB_ADDRESS", tmp_beetle.port_str);
 
     try shell.exec("go mod init tbtest", .{});
     try shell.exec("go get github.com/tigerbeetle/tigerbeetle-go@v{version}", .{
@@ -94,4 +94,16 @@ pub fn validate_release(shell: *Shell, gpa: std.mem.Allocator, options: struct {
 
     try shell.env.put("CC", zig_cc);
     try shell.exec("go run main.go", .{});
+}
+
+pub fn release_published_latest(shell: *Shell) ![]const u8 {
+    // Example output:
+    //  github.com/tigerbeetle/tigerbeetle-go v0.9.149 v0.13.56 v0.13.57
+    const output = try shell.exec_stdout(
+        "go list -m -versions github.com/tigerbeetle/tigerbeetle-go",
+        .{},
+    );
+    const last_version = std.mem.lastIndexOf(u8, output, " v").?;
+
+    return output[last_version + 2 ..];
 }

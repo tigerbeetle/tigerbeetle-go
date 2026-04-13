@@ -1,7 +1,7 @@
-package types
+package tigerbeetle_go
 
 /*
-#include "../native/tb_client.h"
+#include "./native/tb_client.h"
 */
 import "C"
 import (
@@ -42,14 +42,21 @@ func (value Uint128) String() string {
 	return s[lastNonZero:]
 }
 
-func (value Uint128) BigInt() big.Int {
+func (value Uint128) BigInt() *big.Int {
 	// big.Int uses bytes in big-endian but Uint128 stores bytes in little endian, so reverse it.
 	bytes := value.Bytes()
 	swapEndian(bytes[:])
 
 	ret := big.Int{}
 	ret.SetBytes(bytes[:])
-	return ret
+	return &ret
+}
+
+// Returns two 64-bit integers representing the least significant (first 8 bytes) value
+// and the most significant (last 8 bytes) value of the 128-bit integer.
+func (value Uint128) Uint64() (uint64, uint64) {
+	parts := (*[2]uint64)(unsafe.Pointer(&value))
+	return parts[0], parts[1]
 }
 
 // BytesToUint128 converts a raw [16]byte value to Uint128.
@@ -82,7 +89,7 @@ func HexStringToUint128(value string) (Uint128, error) {
 }
 
 // BigIntToUint128 converts a [math/big.Int] to a Uint128.
-func BigIntToUint128(value big.Int) Uint128 {
+func BigIntToUint128(value *big.Int) Uint128 {
 	if value.Sign() < 0 {
 		panic("cannot convert negative big.Int to Uint128")
 	}
@@ -114,6 +121,9 @@ var idMutex sync.Mutex
 // Generates a Universally Unique and Sortable Identifier based on https://github.com/ulid/spec.
 // Uint128 returned are guaranteed to be monotonically increasing when interpreted as little-endian.
 // `ID()` is safe to call from multiple goroutines with monotonicity being sequentially consistent.
+//
+// Panics if it is unable to generated random bytes.
+// Panics if the timestamp is outside of a reasonable bounds.
 func ID() Uint128 {
 	timestamp := time.Now().UnixMilli()
 
@@ -135,14 +145,18 @@ func ID() Uint128 {
 	randomLo := binary.LittleEndian.Uint64(idLastRandom[:8])
 	randomHi := binary.LittleEndian.Uint16(idLastRandom[8:])
 
-	// Increment the random bits as a uint80 together, checking for overflow.
-	// Go defines unsigned arithmetic to wrap around on overflow by default so check for zero.
+	// Increment the random bits as a uint80 together.
+	// If the random bits wrap, increment the timestamp.
 	randomLo += 1
 	if randomLo == 0 {
 		randomHi += 1
 		if randomHi == 0 {
-			idMutex.Unlock()
-			panic("random bits overflow on monotonic increment")
+			timestamp += 1
+			idLastTimestamp = timestamp
+
+			if timestamp == 1<<48 {
+				panic("timestamp overflow")
+			}
 		}
 	}
 

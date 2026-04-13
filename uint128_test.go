@@ -1,10 +1,12 @@
-package types
+package tigerbeetle_go
 
 import (
 	"math/big"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/tigerbeetle/tigerbeetle-go/assert"
 )
 
 func Test_HexStringToUint128(t *testing.T) {
@@ -30,7 +32,6 @@ func Test_HexStringToUint128(t *testing.T) {
 }
 
 func Test_HexStringToUint128_LittleEndian(t *testing.T) {
-
 	test := "123456"
 
 	res, err := HexStringToUint128(test)
@@ -46,7 +47,6 @@ func Test_HexStringToUint128_LittleEndian(t *testing.T) {
 }
 
 func Test_BigIntToUint128(t *testing.T) {
-
 	tests := []string{
 		"0",
 		"1",
@@ -73,10 +73,22 @@ func Test_BigIntToUint128(t *testing.T) {
 	}
 }
 
+func Test_ToUint64(t *testing.T) {
+	zero := ToUint128(0)
+	lo, hi := zero.Uint64()
+	assert.True(t, lo == 0)
+	assert.True(t, hi == 0)
+
+	maxUint64 := ToUint128(^uint64(0))
+	lo, hi = maxUint64.Uint64()
+	assert.True(t, lo == ^uint64(0))
+	assert.True(t, hi == 0)
+}
+
 func Test_BigIntToUint128_Negative(t *testing.T) {
 	negative := new(big.Int).SetInt64(-1)
 	testFunc := func() {
-		BigIntToUint128(*negative)
+		BigIntToUint128(negative)
 	}
 
 	defer func() {
@@ -102,7 +114,7 @@ func Test_ID(t *testing.T) {
 			// Verify idB and idA are monotonic using BigInts.
 			a := idA.BigInt()
 			b := idB.BigInt()
-			if b.Cmp(&a) != 1 {
+			if b.Cmp(a) != 1 {
 				t.Fatalf("Expected ID %v to be greater than ID %v", b, a)
 			}
 
